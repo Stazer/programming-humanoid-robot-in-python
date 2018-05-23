@@ -11,8 +11,13 @@
 
 
 from angle_interpolation import AngleInterpolationAgent
-from keyframes import hello
+from sklearn import svm, metrics
+import numpy as np
+import pickle as pk
+from keyframes import *
+from os import listdir, path
 
+ROBOT_POSE_DATA_DIR = './robot_pose_data/'
 
 class PostureRecognitionAgent(AngleInterpolationAgent):
     def __init__(self, simspark_ip='localhost',
@@ -29,8 +34,26 @@ class PostureRecognitionAgent(AngleInterpolationAgent):
         return super(PostureRecognitionAgent, self).think(perception)
 
     def recognize_posture(self, perception):
-        posture = 'unknown'
-        # YOUR CODE HERE
+        if not hasattr(self, 'classes'):
+            self.classes = listdir(ROBOT_POSE_DATA_DIR)
+
+            all_data = []
+            all_target = []
+
+            for i in range(0, len(self.classes)):
+                filename = path.join(ROBOT_POSE_DATA_DIR, self.classes[i])
+                data = pk.load(open(filename))
+                target = [i] * len(data)
+
+                all_data += data
+                all_target += target
+
+            clf = svm.SVC(gamma=0.001, C=100.)
+            clf.fit(np.array(all_data), np.array(all_target))
+
+            self.posture_classifier = clf.predict
+
+        return self.classes[self.posture_classifier(np.array([perception.joint['LHipYawPitch'], perception.joint['RHipYawPitch'], perception.joint['LHipRoll'], perception.joint['RHipRoll'], perception.joint['LHipPitch'], perception.joint['RHipPitch'], perception.joint['LKneePitch'], perception.joint['RKneePitch'], perception.imu[0], perception.imu[1]]).reshape((1, -1)))[0]]
 
         return posture
 

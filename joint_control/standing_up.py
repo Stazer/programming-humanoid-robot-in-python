@@ -8,6 +8,8 @@
 
 from recognize_posture import PostureRecognitionAgent
 
+from keyframes import leftBackToStand
+from keyframes import leftBellyToStand
 
 class StandingUpAgent(PostureRecognitionAgent):
     def think(self, perception):
@@ -16,8 +18,12 @@ class StandingUpAgent(PostureRecognitionAgent):
 
     def standing_up(self):
         posture = self.posture
-        # YOUR CODE HERE
 
+        actions = {'Back': leftBackToStand(),
+                   'Belly': leftBellyToStand()}
+
+        if posture in actions:
+            self.keyframes = actions[posture]
 
 class TestStandingUpAgent(StandingUpAgent):
     '''this agent turns off all motor to falls down in fixed cycles

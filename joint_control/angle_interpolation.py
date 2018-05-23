@@ -38,9 +38,45 @@ class AngleInterpolationAgent(PIDAgent):
         self.target_joints.update(target_joints)
         return super(AngleInterpolationAgent, self).think(perception)
 
+    def bezier_with(self, p0, p1, p2, p3, i):
+        return (1 - i) ** 3 * p0 \
+            + 3 * (1 - i) ** 2 * i * p1 \
+            + 3 * (1 - i) * i ** 2 * p2 \
+            + i ** 3 * p3
+
+    def bezier_params(self, dt, i, name, time, key, joint):
+        if dt < time[0] and i == 0:
+            return 0.0, time[0], joint, key[0][0]
+        elif time[i] < dt < time[i+1]:
+            return time[i], time[i + 1], key[i][0], key[i + 1][0]
+
+        return None, None, None, None
+
     def angle_interpolation(self, keyframes, perception):
+        if not hasattr(self, 'start_time'):
+            self.start_time = perception.time
+
         target_joints = {}
-        # YOUR CODE HERE
+
+        names, times, keys = keyframes
+
+        for i in range(len(names)):
+            name = names[i]
+            time = times[i]
+            key = keys[i]
+
+            if name not in self.joint_names:
+                continue
+
+            dt = perception.time - self.start_time
+
+            for j in range(len(time) - 1):
+                t0, t3, p0, p3 = self.bezier_params(dt, j, name, time, key, perception.joint[name])
+
+                if t0 == None or t3 == None or p0 == None or p3 == None:
+                    continue
+
+                target_joints[name] = self.bezier_with(p0, key[j][1][1] + p0, key[j][2][1] + p3, p3, (dt - t0) / (t3 - t0))
 
         return target_joints
 

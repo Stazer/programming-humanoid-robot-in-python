@@ -7,6 +7,8 @@
 '''
 
 import weakref
+from threading import Thread
+import requests
 
 class PostHandler(object):
     '''the post hander wraps function to be excuted in paralle
@@ -16,51 +18,58 @@ class PostHandler(object):
 
     def execute_keyframes(self, keyframes):
         '''non-blocking call of ClientAgent.execute_keyframes'''
-        # YOUR CODE HERE
+        Thread(target = self.proxy.execute_keyframes, kwargs = {'keyframes': keyframes}).start()
 
     def set_transform(self, effector_name, transform):
         '''non-blocking call of ClientAgent.set_transform'''
-        # YOUR CODE HERE
+        Thread(target = self.proxy.set_transform, kwargs = {'effector_name': effector_name, 'transform': transform}).start()
 
 
 class ClientAgent(object):
     '''ClientAgent request RPC service from remote server
     '''
-    # YOUR CODE HERE
+    URL = 'http://127.0.0.1:3000/jsonrpc'
+    HEADERS = {'content-type': 'application/json'}
+
+    def build_request(self, method, params = []):
+        if not hasattr(self, 'id'):
+            self.id = 0
+        else:
+            self.id += 1
+
+        return requests.post(URL, data = json.dumps({'method': method, 'params': params, 'jsonrpc': '2.0', 'id': self.id}), headers = headers).json()
+
     def __init__(self):
         self.post = PostHandler(self)
-    
+
     def get_angle(self, joint_name):
         '''get sensor value of given joint'''
-        # YOUR CODE HERE
-    
+        return self.send('get_angle', [joint_name])
+
     def set_angle(self, joint_name, angle):
         '''set target angle of joint for PID controller
         '''
-        # YOUR CODE HERE
+        return self.send('set_angle', [joint_name, angle])
 
     def get_posture(self):
         '''return current posture of robot'''
-        # YOUR CODE HERE
+        return self.send('get_posture')
 
     def execute_keyframes(self, keyframes):
         '''excute keyframes, note this function is blocking call,
         e.g. return until keyframes are executed
         '''
-        # YOUR CODE HERE
+        return self.send('execute_keyframes', [keyframes])
 
     def get_transform(self, name):
         '''get transform with given name
         '''
-        # YOUR CODE HERE
+        return self.send('get_transform', [name])
 
     def set_transform(self, effector_name, transform):
         '''solve the inverse kinematics and control joints use the results
         '''
-        # YOUR CODE HERE
+        return self.send('set_transform', [effector_name, joint_name])
 
 if __name__ == '__main__':
     agent = ClientAgent()
-    # TEST CODE HERE
-
-
